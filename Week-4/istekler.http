@@ -1,0 +1,146 @@
+# VS Code "REST Client" eklentisiyle kullanılır.
+# Her isteğin üstündeki "Send Request" bağlantısına tıklamanız yeterli.
+# Önce: npm run dev
+
+@host = http://localhost:3000
+
+### Sağlık kontrolü — Aşama 0'dan sonra 200 dönmeli
+GET {{host}}/
+
+### Tanımsız yol — JSON 404 dönmeli
+GET {{host}}/boyle-bir-yol-yok
+
+
+# ─────────────────────────────  TODOS  ─────────────────────────────
+
+### Tüm todolar
+GET {{host}}/todos
+
+### Yeni todo
+# @name yeniTodo
+POST {{host}}/todos
+Content-Type: application/json
+
+{
+  "title": "Ödevi bitir",
+  "description": "Hafta 2 REST API"
+}
+
+### Eksik gövde — 400 beklenir
+POST {{host}}/todos
+Content-Type: application/json
+
+{
+  "description": "başlığı yok"
+}
+
+### Tek todo
+GET {{host}}/todos/{{yeniTodo.response.body.id}}
+
+### Tam güncelleme (PUT) — üç alan da zorunlu
+PUT {{host}}/todos/{{yeniTodo.response.body.id}}
+Content-Type: application/json
+
+{
+  "title": "Ödevi bitir (güncellendi)",
+  "description": "Hafta 2 REST API",
+  "completed": true
+}
+
+### Kısmi güncelleme (PATCH)
+PATCH {{host}}/todos/{{yeniTodo.response.body.id}}
+Content-Type: application/json
+
+{
+  "completed": true
+}
+
+### Boş gövdeyle PATCH — 400 beklenir
+PATCH {{host}}/todos/{{yeniTodo.response.body.id}}
+Content-Type: application/json
+
+{}
+
+### Silme — 204 ve boş gövde beklenir
+DELETE {{host}}/todos/{{yeniTodo.response.body.id}}
+
+### Olmayan id — 404 beklenir
+GET {{host}}/todos/00000000-0000-4000-8000-000000000000
+
+
+# ─────────────────────────────  USERS  ─────────────────────────────
+
+### Yeni kullanıcı — yanıtta password OLMAMALI
+# @name yeniUser
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "username": "farhad",
+  "email": "farhad@acm.itu.edu.tr",
+  "password": "acmcokyasa123"
+}
+
+### Aynı e-posta ikinci kez — 409 beklenir
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "username": "baskasi",
+  "email": "farhad@acm.itu.edu.tr",
+  "password": "123456"
+}
+
+### Geçersiz e-posta — 400 beklenir
+POST {{host}}/users
+Content-Type: application/json
+
+{
+  "username": "bozukmail",
+  "email": "acm-nokta-com",
+  "password": "123456"
+}
+
+### Tüm kullanıcılar — hiçbirinde password olmamalı
+GET {{host}}/users
+
+
+# ────────────────────────────  İLİŞKİ  ────────────────────────────
+
+### Bir kullanıcıya ait todo oluştur
+POST {{host}}/todos
+Content-Type: application/json
+
+{
+  "title": "Sahipli todo",
+  "description": "bir kullanıcıya ait",
+  "userId": "{{yeniUser.response.body.id}}"
+}
+
+### Olmayan kullanıcıyla todo — 400 beklenir
+POST {{host}}/todos
+Content-Type: application/json
+
+{
+  "title": "Hayalet sahip",
+  "description": "böyle bir kullanıcı yok",
+  "userId": "00000000-0000-4000-8000-000000000000"
+}
+
+### Kullanıcının todoları
+GET {{host}}/users/{{yeniUser.response.body.id}}/todos
+
+### Olmayan kullanıcının todoları — 404 beklenir
+GET {{host}}/users/00000000-0000-4000-8000-000000000000/todos
+
+
+# ─────────────────────────────  BONUS  ─────────────────────────────
+
+### Tamamlananlar
+GET {{host}}/todos?completed=true
+
+### Arama
+GET {{host}}/todos?q=ödev
+
+### İkisi birlikte
+GET {{host}}/todos?completed=true&q=ödev

@@ -13,29 +13,11 @@ let base = null;
 async function start() {
   if (base) return base;
 
-  // Her test dosyasi TEMIZ bir veritabaniyla baslar.
-  //
-  // Bellekteki dizi her Node surecinde bos basliyordu; veritabani baslamiyor.
-  // Temizlemezsek onceki calistirmadan kalan kayitlar testleri bozar - ozellikle
-  // sabit e-posta kullanan testler ikinci calistirmada 409 alir.
-  //
-  // CASCADE gerekli: todo_tags ve profiles baska tablolara foreign key ile bagli.
-  try {
-    await prisma.$executeRawUnsafe(
-      'TRUNCATE TABLE "todo_tags", "profiles", "todos", "tags", "users" RESTART IDENTITY CASCADE',
-    );
-  } catch (hata) {
-    throw new Error(
-      `Test veritabanı temizlenemedi. Muhtemelen tablolar henüz oluşmadı.
-
-  1) prisma/schema.prisma içindeki modelleri yazın
-  2) npx prisma migrate dev --name init
-  3) Aynı şemayı test branch'ine de uygulayın:
-     node --env-file=.env.test node_modules/prisma/build/index.js migrate deploy
-
-Orijinal hata: ${hata.message}`,
-    );
-  }
+  // Her test dosyası temiz bir veritabanıyla başlar.
+  // Bellekteki dizi her süreçte boş başlıyordu; veritabanı başlamıyor.
+  await prisma.$executeRawUnsafe(
+    'TRUNCATE TABLE "todos", "users" RESTART IDENTITY CASCADE',
+  );
 
   await new Promise((resolve) => {
     listener = app.listen(0, "127.0.0.1", resolve);
@@ -52,22 +34,9 @@ export async function stop() {
   base = null;
 }
 
-// Test ortamında ortam değişkenleri tanımlı değilse varsayılan değerleri ata
-process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "devteam-access-secret-32-chars-min-key";
-process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "devteam-refresh-secret-32-chars-min-key";
-process.env.PASSWORD_SECRET_KEY = process.env.PASSWORD_SECRET_KEY || "devteam-password-secret-key-salt";
-
-export async function req(method, path, body, authOrHeaders) {
+export async function req(method, path, body) {
   const url = (await start()) + path;
   const init = { method, headers: {} };
-
-  if (authOrHeaders) {
-    if (typeof authOrHeaders === "string") {
-      init.headers["authorization"] = `Bearer ${authOrHeaders}`;
-    } else if (typeof authOrHeaders === "object") {
-      Object.assign(init.headers, authOrHeaders);
-    }
-  }
 
   if (body !== undefined) {
     init.headers["content-type"] = "application/json";
@@ -95,12 +64,6 @@ export const put = (path, body) => req("PUT", path, body);
 export const patch = (path, body) => req("PATCH", path, body);
 export const del = (path) => req("DELETE", path);
 
-export const authGet = (path, token) => req("GET", path, undefined, token);
-export const authPost = (path, body, token) => req("POST", path, body, token);
-export const authPut = (path, body, token) => req("PUT", path, body, token);
-export const authPatch = (path, body, token) => req("PATCH", path, body, token);
-export const authDel = (path, token) => req("DELETE", path, undefined, token);
-
 /** Geçerli bir todo oluşturur, ham yanıtı döndürür. */
 export function makeTodo(fields = {}) {
   return post("/todos", {
@@ -123,9 +86,3 @@ export function makeUser(fields = {}) {
 
 /** Hiçbir kayda ait olmayan, biçimi geçerli bir id. */
 export const OLMAYAN_ID = "00000000-0000-4000-8000-000000000000";
-
-/** Geçerli ve benzersiz bir etiket oluşturur, ham yanıtı döndürür. */
-export function makeTag(name) {
-  const n = name ?? "etiket_" + Math.random().toString(36).slice(2, 10);
-  return post("/tags", { name: n });
-}

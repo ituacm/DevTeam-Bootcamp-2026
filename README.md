@@ -9,9 +9,11 @@ olarak hazırlanmıştır.
   kontrol eder)
 - `Week-2/` — Ders 2'de canlı yazdığımız kod (referans)
 - `Week-3/` — Ders 3'te canlı yazdığımız kod: PostgreSQL, Prisma ve migration
+- `Week-4/` — Ders 4 referans kodu: Kimlik doğrulama, bcrypt, JWT ve middleware
 - `project/` — Kampın sonuna kadar üzerine ekleyeceğimiz Todo API projesi.
   **Ödev 2** için [`project/README.md`](project/README.md),
-  **Ödev 3** için [`project/ODEV-3.md`](project/ODEV-3.md)
+  **Ödev 3** için [`project/ODEV-3.md`](project/ODEV-3.md),
+  **Ödev 4** için [`project/ODEV-4.md`](project/ODEV-4.md)
 
 ## Ödev nasıl yapılır
 
