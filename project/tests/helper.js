@@ -57,17 +57,48 @@ process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "devteam-access
 process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "devteam-refresh-secret-32-chars-min-key";
 process.env.PASSWORD_SECRET_KEY = process.env.PASSWORD_SECRET_KEY || "devteam-password-secret-key-salt";
 
-export async function req(method, path, body, authOrHeaders) {
-  const url = (await start()) + path;
-  const init = { method, headers: {} };
+// ─── Otomatik Auth (Geriye dönük uyumluluk) ───────────────────────────
+// Ödev 4'te verifyAccessToken middleware'i eklendiğinde eski testler
+// (01-todos, 04-filters, 05-priority, 06-profile, 07-tags) token
+// göndermeden /todos rotalarına istek atıyor ve 401 alıyor.
+//
+// Bu mekanizma şöyle çalışır:
+//   1. Token'sız bir istek 401 döndürürse, otomatik olarak bir test
+//      kullanıcısı register edilir ve access token alınır.
+//   2. Aynı istek bu sefer token ile tekrar denenir.
+//   3. Token bir kez alındıktan sonra cache'lenir — her istek için
+//      yeni kullanıcı oluşturulmaz.
+//
+// Auth eklenmemiş projelerde (Ödev 3) 401 dönmediği için bu kod hiçbir
+// şeyi değiştirmez — tamamen şeffaftır.
+// ───────────────────────────────────────────────────────────────────────
 
-  if (authOrHeaders) {
-    if (typeof authOrHeaders === "string") {
-      init.headers["authorization"] = `Bearer ${authOrHeaders}`;
-    } else if (typeof authOrHeaders === "object") {
-      Object.assign(init.headers, authOrHeaders);
-    }
-  }
+let _autoToken = null;
+
+async function _getAutoToken() {
+  if (_autoToken) return _autoToken;
+
+  const baseUrl = await start();
+  const n = Math.random().toString(36).slice(2, 10);
+  const regRes = await fetch(baseUrl + "/users/register", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      username: `test_oto_${n}`,
+      email: `test_oto_${n}@acm.itu.edu.tr`,
+      password: "TestOtoSifre123!",
+    }),
+  });
+
+  if (!regRes.ok) return null;
+
+  const regBody = await regRes.json();
+  _autoToken = regBody?.tokens?.accessToken ?? null;
+  return _autoToken;
+}
+
+async function _rawReq(method, url, body, headers) {
+  const init = { method, headers: { ...headers } };
 
   if (body !== undefined) {
     init.headers["content-type"] = "application/json";
@@ -89,6 +120,33 @@ export async function req(method, path, body, authOrHeaders) {
   return { status: res.status, body: json, text, headers: res.headers };
 }
 
+export async function req(method, path, body, authOrHeaders) {
+  const url = (await start()) + path;
+  const headers = {};
+
+  if (authOrHeaders) {
+    if (typeof authOrHeaders === "string") {
+      headers["authorization"] = `Bearer ${authOrHeaders}`;
+    } else if (typeof authOrHeaders === "object") {
+      Object.assign(headers, authOrHeaders);
+    }
+  }
+
+  const result = await _rawReq(method, url, body, headers);
+
+  // Auth retry: eğer token gönderilmemişse ve 401 döndüyse,
+  // otomatik bir test kullanıcısı oluşturup tekrar dene.
+  if (result.status === 401 && !authOrHeaders) {
+    const token = await _getAutoToken();
+    if (token) {
+      headers["authorization"] = `Bearer ${token}`;
+      return _rawReq(method, url, body, headers);
+    }
+  }
+
+  return result;
+}
+
 export const get = (path) => req("GET", path);
 export const post = (path, body) => req("POST", path, body);
 export const put = (path, body) => req("PUT", path, body);
@@ -100,6 +158,24 @@ export const authPost = (path, body, token) => req("POST", path, body, token);
 export const authPut = (path, body, token) => req("PUT", path, body, token);
 export const authPatch = (path, body, token) => req("PATCH", path, body, token);
 export const authDel = (path, token) => req("DELETE", path, undefined, token);
+
+// Retry'sız istek fonksiyonları — 401 testleri için (08-auth.test.js).
+// Bu fonksiyonlar otomatik auth retry yapmaz; sunucunun döndüğü yanıtı
+// olduğu gibi döner. 401 beklenen testlerde kullanılır.
+export async function noRetryReq(method, path, body, authOrHeaders) {
+  const url = (await start()) + path;
+  const headers = {};
+  if (authOrHeaders) {
+    if (typeof authOrHeaders === "string") {
+      headers["authorization"] = `Bearer ${authOrHeaders}`;
+    } else if (typeof authOrHeaders === "object") {
+      Object.assign(headers, authOrHeaders);
+    }
+  }
+  return _rawReq(method, url, body, headers);
+}
+export const noRetryGet = (path) => noRetryReq("GET", path);
+export const noRetryPost = (path, body) => noRetryReq("POST", path, body);
 
 /** Geçerli bir todo oluşturur, ham yanıtı döndürür. */
 export function makeTodo(fields = {}) {

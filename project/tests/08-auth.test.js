@@ -12,6 +12,8 @@ import {
   authPost,
   authPut,
   authDel,
+  noRetryGet,
+  noRetryPost,
   stop,
   OLMAYAN_ID,
 } from "./helper.js";
@@ -196,7 +198,7 @@ test("POST /users/refresh geçersiz veya bozuk token → 401", async () => {
 // ────────────────────── 4. KORUMALI ROTALAR (AUTH) ──────────────────────
 
 test("GET /todos token OLMADAN istek atıldığında → 401", async () => {
-  const res = await get("/todos");
+  const res = await noRetryGet("/todos");
   assert.equal(
     res.status,
     401,
@@ -214,7 +216,7 @@ test("GET /todos geçersiz / sahte token ile → 401", async () => {
 });
 
 test("POST /todos token OLMADAN istek atıldığında → 401", async () => {
-  const res = await post("/todos", {
+  const res = await noRetryPost("/todos", {
     title: "Yetkisiz todo",
     description: "giriş yapmadan eklenemez",
   });

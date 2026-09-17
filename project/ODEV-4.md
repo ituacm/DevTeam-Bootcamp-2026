@@ -199,6 +199,31 @@ npm test
 
 Bu komut önceki 7 test dosyasının yanında **`tests/08-auth.test.js`** dosyasındaki 14 yeni güvenlik testini de çalıştırır.
 
+### ⚠️ Eski testler ve authentication uyumu
+
+Authentication ekledikten sonra **eski test dosyalarının büyük çoğunluğu çalışmaya devam eder.** Test altyapısı (`helper.js`) token'sız bir istek `401` döndüğünde otomatik olarak bir test kullanıcısı oluşturup isteği token ile tekrar dener. Bu sayede `01-todos`, `04-filters`, `05-priority`, `06-profile` ve `07-tags` testleri auth eklenmiş projelerde de sorunsuz geçer.
+
+Ancak **`03-relations`** dosyasındaki 5 test, authentication sonrası **beklenen şekilde kırılır.** Nedeni:
+
+- Ödev 3'te `POST /todos` body'den `userId` kabul ediyordu.
+- Ödev 4'te `userId` artık body'den **alınmaz**; `req.user.id`'den (token'dan) otomatik atanır.
+- Bu davranış değişikliği **Veri İzolasyonu (Data Ownership)** kuralının doğal sonucudur.
+
+**Bu 5 testin kırılması bir sorun değildir** — projeniz doğru çalışıyor demektir. Değerlendirmede bu testler **dikkate alınmayacaktır.**
+
+| Test dosyası | Auth sonrası durum |
+|---|---|
+| `00-warmup` (2 test) | ✅ Geçer |
+| `01-todos` (12 test) | ✅ Geçer (otomatik token ile) |
+| `02-users` (5 test) | ✅ Geçer |
+| `03-relations` (5 test) | ⚠️ Kırılır (beklenen — userId artık token'dan) |
+| `04-filters` (3 test) | ✅ Geçer (otomatik token ile) |
+| `05-priority` (6 test) | ✅ Geçer (otomatik token ile) |
+| `06-profile` (6 test) | ✅ Geçer |
+| `07-tags` (10 test) | ✅ Geçer (otomatik token ile) |
+| **`08-auth` (14 test)** | ✅ **Bu ödevin ana testi** |
+
 Test çıktısında kırmızı bir hata görürseniz, testin verdiği `AssertionError` mesajını dikkatlice okuyun; her hata neyin eksik olduğunu açıkça belirtir.
 
 Başarılar! 🚀
+
