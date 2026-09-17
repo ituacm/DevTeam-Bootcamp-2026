@@ -1,0 +1,1389 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Intro to React</title>
+    <style>
+      :root {
+        --bg-0: #050c1e;
+        --bg-1: #0a1733;
+        --bg-2: #0e2049;
+        --panel: rgba(120, 170, 255, 0.06);
+        --panel-line: rgba(120, 170, 255, 0.16);
+        --text: #e9effc;
+        --muted: #92a6cc;
+        --accent: #55b2ff;
+        --accent-soft: rgba(85, 178, 255, 0.14);
+        --good: #5fe3b0;
+        --warn: #ffb56b;
+        --bad: #ff7a85;
+        --code-bg: rgba(3, 9, 24, 0.66);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        background: var(--bg-0);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .backdrop {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(
+            1200px 700px at 12% 8%,
+            var(--bg-2) 0%,
+            transparent 60%
+          ),
+          radial-gradient(1000px 800px at 88% 92%, #123063 0%, transparent 58%),
+          linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 100%);
+      }
+
+      .backdrop::after {
+        content: "";
+        position: absolute;
+        inset: -20%;
+        background: radial-gradient(
+            420px 420px at 25% 35%,
+            rgba(85, 178, 255, 0.16),
+            transparent 65%
+          ),
+          radial-gradient(
+            380px 380px at 75% 65%,
+            rgba(95, 227, 176, 0.1),
+            transparent 65%
+          );
+        animation: drift 26s ease-in-out infinite alternate;
+        filter: blur(20px);
+      }
+
+      .grid-lines {
+        position: fixed;
+        inset: 0;
+        background-image: linear-gradient(
+            rgba(120, 170, 255, 0.045) 1px,
+            transparent 1px
+          ),
+          linear-gradient(90deg, rgba(120, 170, 255, 0.045) 1px, transparent 1px);
+        background-size: 64px 64px;
+        mask-image: radial-gradient(
+          circle at 50% 45%,
+          black 0%,
+          transparent 78%
+        );
+      }
+
+      @keyframes drift {
+        from {
+          transform: translate3d(-3%, -2%, 0) scale(1);
+        }
+        to {
+          transform: translate3d(4%, 3%, 0) scale(1.12);
+        }
+      }
+
+      .stage {
+        position: relative;
+        height: 100%;
+        width: 100%;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        padding: clamp(2.5rem, 6vw, 7rem);
+        padding-bottom: clamp(5rem, 9vh, 7rem);
+      }
+
+      .slide.is-live,
+      .slide.is-out {
+        display: flex;
+      }
+
+      .slide.is-live {
+        animation: slide-in 520ms cubic-bezier(0.22, 0.85, 0.24, 1) both;
+        z-index: 2;
+      }
+
+      .slide.is-out {
+        animation: slide-out 420ms cubic-bezier(0.55, 0, 0.7, 0.2) both;
+        z-index: 1;
+      }
+
+      .stage[data-dir="back"] .slide.is-live {
+        animation-name: slide-in-back;
+      }
+
+      .stage[data-dir="back"] .slide.is-out {
+        animation-name: slide-out-back;
+      }
+
+      @keyframes slide-in {
+        from {
+          opacity: 0;
+          transform: translateX(7%) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      @keyframes slide-out {
+        from {
+          opacity: 1;
+          transform: none;
+        }
+        to {
+          opacity: 0;
+          transform: translateX(-5%) scale(0.98);
+        }
+      }
+
+      @keyframes slide-in-back {
+        from {
+          opacity: 0;
+          transform: translateX(-7%) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      @keyframes slide-out-back {
+        from {
+          opacity: 1;
+          transform: none;
+        }
+        to {
+          opacity: 0;
+          transform: translateX(5%) scale(0.98);
+        }
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      h1 {
+        font-size: clamp(2.6rem, 6vw, 5rem);
+        line-height: 1.04;
+        letter-spacing: -0.03em;
+        margin: 0;
+        font-weight: 760;
+      }
+
+      h2 {
+        font-size: clamp(1.9rem, 3.6vw, 3.1rem);
+        line-height: 1.1;
+        letter-spacing: -0.025em;
+        margin: 0 0 1.6rem;
+        font-weight: 720;
+      }
+
+      p,
+      li {
+        font-size: clamp(1.05rem, 1.55vw, 1.55rem);
+        line-height: 1.55;
+        color: #dae4f7;
+        margin: 0 0 0.9rem;
+      }
+
+      .lead {
+        font-size: clamp(1.15rem, 1.9vw, 1.85rem);
+        color: var(--muted);
+        max-width: 46ch;
+      }
+
+      .eyebrow {
+        font-size: clamp(0.75rem, 1vw, 0.95rem);
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 1.1rem;
+        font-weight: 620;
+      }
+
+      strong {
+        color: #fff;
+      }
+
+      em {
+        color: var(--accent);
+        font-style: normal;
+        font-weight: 600;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      ul.bullets li {
+        position: relative;
+        padding-left: 1.9rem;
+        margin-bottom: 1.05rem;
+      }
+
+      ul.bullets li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.62em;
+        width: 0.72rem;
+        height: 0.72rem;
+        border-radius: 3px;
+        background: var(--accent);
+        box-shadow: 0 0 18px rgba(85, 178, 255, 0.55);
+      }
+
+      ul.bullets li.no::before {
+        background: var(--bad);
+        box-shadow: 0 0 18px rgba(255, 122, 133, 0.45);
+      }
+
+      ul.bullets li.yes::before {
+        background: var(--good);
+        box-shadow: 0 0 18px rgba(95, 227, 176, 0.45);
+      }
+
+      code {
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-size: 0.9em;
+        background: var(--accent-soft);
+        border: 1px solid var(--panel-line);
+        border-radius: 6px;
+        padding: 0.1em 0.42em;
+        color: #cfe6ff;
+      }
+
+      pre.code {
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-size: clamp(0.85rem, 1.25vw, 1.32rem);
+        line-height: 1.6;
+        background: var(--code-bg);
+        border: 1px solid var(--panel-line);
+        border-left: 3px solid var(--accent);
+        border-radius: 12px;
+        padding: 1.1rem 1.35rem;
+        margin: 0 0 1.1rem;
+        overflow: auto;
+        color: #d6e4fb;
+      }
+
+      pre.code.bad {
+        border-left-color: var(--bad);
+      }
+
+      pre.code.good {
+        border-left-color: var(--good);
+      }
+
+      pre.code.tight {
+        font-size: clamp(0.78rem, 1vw, 1.05rem);
+        padding: 0.8rem 1rem;
+      }
+
+      .tok-c {
+        color: #6c82ab;
+        font-style: italic;
+      }
+      .tok-s {
+        color: #9ce8b6;
+      }
+      .tok-t {
+        color: #ff9fb0;
+      }
+      .tok-k {
+        color: #7fb6ff;
+      }
+      .tok-f {
+        color: #d5a6ff;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--panel-line);
+        border-radius: 14px;
+        padding: 1.15rem 1.3rem;
+      }
+
+      .card h3 {
+        margin: 0 0 0.5rem;
+        font-size: clamp(1rem, 1.35vw, 1.35rem);
+        color: var(--accent);
+        font-family: ui-monospace, Menlo, monospace;
+        letter-spacing: -0.01em;
+      }
+
+      .card p {
+        margin: 0;
+        font-size: clamp(0.9rem, 1.2vw, 1.2rem);
+        color: var(--muted);
+      }
+
+      .card pre.code {
+        margin-bottom: 0.8rem;
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.4rem;
+        align-items: start;
+      }
+
+      .col-label {
+        font-size: clamp(0.8rem, 1.05vw, 1.05rem);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        margin-bottom: 0.7rem;
+        font-weight: 650;
+      }
+
+      .col-label.no {
+        color: var(--bad);
+      }
+      .col-label.yes {
+        color: var(--good);
+      }
+
+      .flow {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.7rem;
+      }
+
+      .flow span {
+        background: var(--panel);
+        border: 1px solid var(--panel-line);
+        border-radius: 10px;
+        padding: 0.7rem 1rem;
+        font-size: clamp(0.85rem, 1.15vw, 1.2rem);
+      }
+
+      .flow i {
+        color: var(--accent);
+        font-style: normal;
+        font-size: 1.3rem;
+      }
+
+      .tree {
+        font-family: ui-monospace, Menlo, monospace;
+        font-size: clamp(0.9rem, 1.3vw, 1.35rem);
+      }
+
+      .tree .node {
+        display: inline-block;
+        background: var(--panel);
+        border: 1px solid var(--panel-line);
+        border-radius: 9px;
+        padding: 0.5rem 0.9rem;
+        margin: 0.3rem 0;
+        color: #cfe6ff;
+      }
+
+      .tree .node.root {
+        border-color: var(--accent);
+        color: #fff;
+        box-shadow: 0 0 26px rgba(85, 178, 255, 0.25);
+      }
+
+      .tree .kids {
+        margin-left: 1.5rem;
+        padding-left: 1.5rem;
+        border-left: 1px dashed var(--panel-line);
+      }
+
+      .big {
+        font-size: clamp(2.2rem, 5.4vw, 4.6rem);
+        font-family: ui-monospace, Menlo, monospace;
+        letter-spacing: -0.03em;
+        color: #fff;
+        margin: 0.4rem 0 1.4rem;
+      }
+
+      .big em {
+        color: var(--accent);
+      }
+
+      .callout {
+        border-left: 3px solid var(--warn);
+        background: rgba(255, 181, 107, 0.07);
+        border-radius: 0 12px 12px 0;
+        padding: 1rem 1.3rem;
+      }
+
+      .callout p {
+        margin: 0;
+        color: #ffe0bd;
+      }
+
+      .answer {
+        border-left: 3px solid var(--good);
+        background: rgba(95, 227, 176, 0.07);
+        border-radius: 0 12px 12px 0;
+        padding: 0.8rem 1rem;
+      }
+
+      .answer p {
+        margin: 0;
+        color: #c7f6e2;
+        font-size: clamp(0.88rem, 1.1vw, 1.1rem);
+      }
+
+      .slide.cover h1 {
+        font-size: clamp(3rem, 8.5vw, 7.5rem);
+      }
+
+      .slide.cover .meta {
+        display: flex;
+        gap: 1.6rem;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+        color: var(--muted);
+        font-size: clamp(0.95rem, 1.3vw, 1.3rem);
+      }
+
+      .slide.divider h1 {
+        font-size: clamp(2.6rem, 6.5vw, 5.5rem);
+      }
+
+      .slide.divider .lead {
+        margin-top: 1.4rem;
+        max-width: 40ch;
+      }
+
+      .progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent), var(--good));
+        box-shadow: 0 0 14px rgba(85, 178, 255, 0.7);
+        transition: width 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        z-index: 40;
+      }
+
+      .chrome {
+        position: fixed;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .chrome.br {
+        right: clamp(1rem, 2.4vw, 2.4rem);
+        bottom: clamp(1rem, 2.4vw, 2rem);
+      }
+
+      .btn {
+        background: var(--panel);
+        border: 1px solid var(--panel-line);
+        color: var(--text);
+        border-radius: 9px;
+        width: 2.4rem;
+        height: 2.4rem;
+        font-size: 1.05rem;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        transition: background 160ms, border-color 160ms, transform 160ms;
+      }
+
+      .btn:hover {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        transform: translateY(-1px);
+      }
+
+      .counter {
+        font-family: ui-monospace, Menlo, monospace;
+        letter-spacing: 0.06em;
+      }
+
+      .counter b {
+        color: var(--text);
+      }
+
+      kbd {
+        font-family: ui-monospace, Menlo, monospace;
+        background: var(--panel);
+        border: 1px solid var(--panel-line);
+        border-bottom-width: 2px;
+        border-radius: 5px;
+        padding: 0.1em 0.42em;
+        font-size: 0.9em;
+        color: #cfe6ff;
+      }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: rgba(4, 10, 26, 0.9);
+        backdrop-filter: blur(14px);
+        display: none;
+        padding: clamp(1.5rem, 4vw, 4rem);
+        overflow: auto;
+      }
+
+      .overlay.open {
+        display: block;
+        animation: rise 260ms ease both;
+      }
+
+      .overlay h2 {
+        margin-bottom: 1.4rem;
+      }
+
+      .thumbs {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 0.8rem;
+      }
+
+      .thumb {
+        text-align: left;
+        background: var(--panel);
+        border: 1px solid var(--panel-line);
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        color: var(--text);
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.95rem;
+        line-height: 1.35;
+        transition: border-color 160ms, background 160ms, transform 160ms;
+      }
+
+      .thumb:hover {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        transform: translateY(-2px);
+      }
+
+      .thumb.current {
+        border-color: var(--accent);
+        box-shadow: 0 0 22px rgba(85, 178, 255, 0.25);
+      }
+
+      .thumb .idx {
+        font-family: ui-monospace, Menlo, monospace;
+        color: var(--accent);
+        font-size: 0.8rem;
+        display: block;
+        margin-bottom: 0.3rem;
+      }
+
+      .help-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 0.7rem 2rem;
+        max-width: 60rem;
+      }
+
+      .help-grid div {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(120, 170, 255, 0.09);
+        font-size: 1rem;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::after {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .two-col {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <div class="grid-lines"></div>
+
+    <div class="progress" id="progress" style="width: 0"></div>
+
+    <div class="stage" id="stage" data-dir="fwd"></div>
+
+    <div class="chrome br">
+      <span class="counter" id="counter"><b>1</b> / 1</span>
+      <button class="btn" id="prev" title="Previous (←)">‹</button>
+      <button class="btn" id="next" title="Next (→)">›</button>
+      <button class="btn" id="grid" title="Overview (O)">▦</button>
+      <button class="btn" id="full" title="Fullscreen (F)">⛶</button>
+    </div>
+
+    <div class="overlay" id="overview">
+      <h2>Slides</h2>
+      <div class="thumbs" id="thumbs"></div>
+    </div>
+
+    <div class="overlay" id="help">
+      <h2>Shortcuts</h2>
+      <div class="help-grid">
+        <div><span>Next slide</span><span><kbd>→</kbd> <kbd>Space</kbd></span></div>
+        <div><span>Previous</span><span><kbd>←</kbd></span></div>
+        <div><span>First / last slide</span><span><kbd>Home</kbd> <kbd>End</kbd></span></div>
+        <div><span>Overview</span><span><kbd>O</kbd></span></div>
+        <div><span>Fullscreen</span><span><kbd>F</kbd></span></div>
+        <div><span>Close</span><span><kbd>Esc</kbd></span></div>
+      </div>
+    </div>
+
+    <script>
+      const SLIDES = [
+        {
+          cls: "cover",
+          title: "Cover",
+          html: `
+            <p class="eyebrow">Intro to React</p>
+            <h1>React, from zero</h1>
+            <p class="lead">Muhammed Mutlu · Cüneyt Yılmaz</p>
+            <div class="meta">
+              <span>Components · Props · State</span>
+              <span>Event handling</span>
+              <span>useEffect · data fetching</span>
+            </div>`,
+        },
+        {
+          title: "Agenda",
+          html: `
+            <h2>Agenda</h2>
+            <ul class="bullets">
+              <li><strong>Why we need a framework?</strong> <span class="muted">— the problem React solves</span></li>
+              <li><strong>Components, props, state</strong> <span class="muted">— how a React app is shaped</span></li>
+              <li><strong>Event handling</strong> <span class="muted">— reacting to the user</span></li>
+              <li><strong>useEffect</strong> <span class="muted">— talking to the outside world</span></li>
+              <li><strong>Setting up a project</strong> <span class="muted">— Node, npm, Vite, Tailwind</span></li>
+              <li><strong>Live coding</strong> <span class="muted">— we build a todo app together</span></li>
+            </ul>`,
+        },
+        {
+          cls: "divider",
+          title: "Part 1 · Why we need a framework",
+          html: `
+            <p class="eyebrow">Part 1 of 6</p>
+            <h1>Why we need a framework?</h1>
+            <p class="lead">What was painful before React, and what problem it actually solves.</p>`,
+        },
+        {
+          title: "The job",
+          html: `
+            <p class="eyebrow">Before any framework</p>
+            <h2>A frontend does two things</h2>
+            <ul class="bullets">
+              <li>Turn <strong>data</strong> into what you see on <strong>screen</strong></li>
+              <li>Keep the two <strong>in sync</strong> while the data keeps changing</li>
+            </ul>
+            <p class="lead">The first one is easy. Every framework you have ever heard of exists because of the second one.</p>`,
+        },
+        {
+          title: "Doing it by hand",
+          html: `
+            <h2>A todo list in plain JavaScript</h2>
+            <pre class="code bad tight">const item = document.createElement("li");
+item.textContent = todo.title;
+list.append(item);
+counter.textContent = todos.length + " left";</pre>
+            <p class="lead">You update the <strong>data</strong> and the <strong>screen</strong> separately. Miss one and the interface starts lying.</p>
+            <div class="callout"><p>The same fact lives in two places: in your array and in the page. Keeping them equal is your job, on every single change.</p></div>`,
+        },
+        {
+          title: "The DOM",
+          html: `
+            <h2>What is the DOM?</h2>
+            <p class="lead">The browser reads your HTML once and keeps it as a live tree of objects. That tree is the DOM.</p>
+            <div class="tree">
+              <div class="node root">document</div>
+              <div class="kids">
+                <div>
+                  <span class="node">html</span>
+                  <div class="kids">
+                    <div><span class="node">head</span></div>
+                    <div><span class="node">body</span><span class="muted"> → div → ul → li</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>`,
+        },
+        {
+          title: "UI = f(state)",
+          html: `
+            <p class="eyebrow">The one big idea</p>
+            <div class="big">UI = <em>f</em>(state)</div>
+            <div class="two-col">
+              <div>
+                <div class="col-label no">Imperative</div>
+                <pre class="code bad tight">item.textContent = todo.title;
+list.append(item);</pre>
+                <p class="muted">"Change this, then that."</p>
+              </div>
+              <div>
+                <div class="col-label yes">Declarative</div>
+                <pre class="code good tight">&lt;ul&gt;
+  {todos.map((t) =&gt; &lt;li&gt;{t.title}&lt;/li&gt;)}
+&lt;/ul&gt;</pre>
+                <p class="muted">"If the data is this, the screen looks like that."</p>
+              </div>
+            </div>`,
+        },
+        {
+          title: "What React is",
+          html: `
+            <h2>What React is — and is not</h2>
+            <div class="two-col">
+              <div>
+                <div class="col-label yes">It gives you</div>
+                <ul class="bullets">
+                  <li>Components</li>
+                  <li>State</li>
+                  <li>Automatic DOM updates</li>
+                </ul>
+              </div>
+              <div>
+                <div class="col-label no">It does not give you</div>
+                <ul class="bullets">
+                  <li>Routing</li>
+                  <li>An HTTP client</li>
+                  <li>Styling</li>
+                </ul>
+              </div>
+            </div>`,
+        },
+        {
+          cls: "divider",
+          title: "Part 2 · Components, props, state",
+          html: `
+            <p class="eyebrow">Part 2 of 6</p>
+            <h1>Components, props, state</h1>
+            <p class="lead">JSX, components, props and state — the ideas behind every React file you will ever write.</p>`,
+        },
+        {
+          title: "JSX",
+          html: `
+            <h2>Why JSX exists</h2>
+            <div class="two-col">
+              <div>
+                <div class="col-label no">Plain JavaScript</div>
+                <pre class="code bad tight">const el = document.createElement("li");
+el.className = "todo";
+el.textContent = todo.title;</pre>
+              </div>
+              <div>
+                <div class="col-label yes">JSX</div>
+                <pre class="code good tight">&lt;li className="todo"&gt;{todo.title}&lt;/li&gt;</pre>
+              </div>
+            </div>
+            <p class="lead">JSX is not HTML, and the browser never sees it. A build step turns it into plain JavaScript function calls.</p>`,
+        },
+        {
+          title: "Component",
+          html: `
+            <h2>Component: function that returns compiled JSX</h2>
+            <pre class="code good">function Header() {
+  return &lt;h1&gt;My todos&lt;/h1&gt;;
+}</pre>
+            <ul class="bullets">
+              <li>An ordinary JavaScript function — no magic</li>
+              <li>Returns compiled JSX</li>
+            </ul>`,
+        },
+        {
+          title: "Component tree",
+          html: `
+            <h2>UI: a tree of components</h2>
+            <div class="tree">
+              <div class="node root">App</div>
+              <div class="kids">
+                <div><span class="node">Header</span></div>
+                <div><span class="node">TodoForm</span></div>
+                <div>
+                  <span class="node">TodoList</span>
+                  <div class="kids">
+                    <span class="node">TodoItem</span>
+                    <span class="muted"> × n</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="lead">Goal: each piece does one job. No more, no less.</p>`,
+        },
+        {
+          title: "Conditional rendering",
+          html: `
+            <h2>Conditional rendering</h2>
+            <div class="two-col">
+              <div>
+                <div class="col-label yes">Works</div>
+                <pre class="code good tight">{loading ? "Loading…" : &lt;TodoList /&gt;}
+
+{todos.length === 0 &amp;&amp; "Nothing to do"}</pre>
+              </div>
+              <div>
+                <div class="col-label no">Does not work</div>
+                <pre class="code bad tight">{if (loading) "Loading…"}</pre>
+              </div>
+            </div>
+            <div class="callout"><p><code>if</code> is a statement: it produces no value. Inside JSX you need a ternary or <code>&amp;&amp;</code>.</p></div>`,
+        },
+        {
+          title: "Props",
+          html: `
+            <h2>Props: data coming from the outside</h2>
+            <pre class="code good tight">function TodoItem({ todo }) {
+  return &lt;li&gt;{todo.title}&lt;/li&gt;;
+}
+
+&lt;TodoItem todo={todo} /&gt;</pre>
+            <div class="flow">
+              <span><strong>TodoList</strong></span>
+              <i>↓ todo</i>
+              <span><strong>TodoItem</strong></span>
+            </div>
+            <p class="lead">Same idea as a function parameter.`,
+        },
+        {
+          title: "Lists and key",
+          html: `
+            <h2>Lists and key</h2>
+            <div class="two-col">
+              <div>
+                <div class="col-label no">Plain JavaScript</div>
+                <pre class="code bad tight">list.innerHTML = todos
+  .map((t) =&gt; "&lt;li&gt;" + t.title + "&lt;/li&gt;")
+  .join("");</pre>
+              </div>
+              <div>
+                <div class="col-label yes">React</div>
+                <pre class="code good tight">{todos.map((todo) =&gt; (
+  &lt;TodoItem key={todo.id} todo={todo} /&gt;
+))}</pre>
+              </div>
+            </div>
+            <p class="lead">React needs a key to identify each item in the list.</p>`,
+        },
+        {
+          title: "State",
+          html: `
+            <h2>State: a way to keep track of things that change</h2>
+            <div class="two-col">
+              <div>
+                <div class="col-label no">Nothing happens</div>
+                <pre class="code bad tight">function Counter() {
+  let count = 0;
+  return (
+    &lt;button onClick={() =&gt; count++}&gt;
+      {count}
+    &lt;/button&gt;
+  );
+}</pre>
+              </div>
+              <div>
+                <div class="col-label yes">Works</div>
+                <pre class="code good tight">function Counter() {
+  const [count, setCount] = useState(0);
+  return (
+    &lt;button onClick={() =&gt; setCount(count + 1)}&gt;
+      {count}
+    &lt;/button&gt;
+  );
+}</pre>
+              </div>
+            </div>
+            <p class="lead">A component runs from the top again on every render, so a local variable resets. React listens to the state and re-renders when it changes.</p>`,
+        },
+        {
+          title: "Updating state",
+          html: `
+            <h2>Never change state in place</h2>
+            <div class="two-col">
+              <div>
+                <div class="col-label no">Screen stays the same</div>
+                <pre class="code bad tight">todos.push(newTodo);
+todo.done = true;</pre>
+              </div>
+              <div>
+                <div class="col-label yes">Produce a new value</div>
+                <pre class="code good tight">setTodos([newTodo, ...todos]);
+setTodos(todos.map(...));
+setTodos(todos.filter(...));</pre>
+              </div>
+            </div>
+            <div class="callout"><p>React answers "did this change?" by comparing <strong>references</strong>. Hand back the same array and it sees no change.</p></div>`,
+        },
+        {
+          title: "Folder structure",
+          html: `
+            <h2>Folder structure</h2>
+            <pre class="code tight">src/
+  main.jsx          // mounts App into index.html
+  App.jsx           // root component
+  components/
+    TodoForm.jsx
+    TodoList.jsx
+    TodoItem.jsx
+  index.css</pre>
+            <p class="lead">One component per file, one responsibility per file.</p>`,
+        },
+        {
+          cls: "divider",
+          title: "Part 3 · Event handling",
+          html: `
+            <p class="eyebrow">Part 3 of 6</p>
+            <h1>Event handling</h1>
+            <p class="lead">Clicks, typing and forms</p>`,
+        },
+        {
+          title: "Event handling",
+          html: `
+            <h2>The same events, less wiring</h2>
+            <div class="two-col">
+              <div>
+                <div class="col-label no">Plain JavaScript</div>
+                <pre class="code bad tight">const btn = document.querySelector("#add");
+btn.addEventListener("click", handleAdd);</pre>
+              </div>
+              <div>
+                <div class="col-label yes">React</div>
+                <pre class="code good tight">&lt;button onClick={handleAdd}&gt;Add&lt;/button&gt;</pre>
+              </div>
+            </div>
+            <ul class="bullets">
+              <li><code>onClick</code>, <code>onChange</code>, <code>onSubmit</code> — camelCase - not like HTML</li>
+            </ul>`,
+        },
+        {
+          title: "Controlled input",
+          html: `
+            <h2>Controlled input</h2>
+            <div class="two-col">
+              <div>
+                <div class="col-label no">Plain JavaScript</div>
+                <pre class="code bad tight">const text = input.value;</pre>
+                <p class="muted">The DOM node is the source of truth. You read it whenever you need it.</p>
+              </div>
+              <div>
+                <div class="col-label yes">React</div>
+                <pre class="code good tight">const [text, setText] = useState("");
+
+&lt;input
+  value={text}
+  onChange={(e) =&gt; setText(e.target.value)}
+/&gt;</pre>
+                <p class="muted">State is the source of truth. The input only displays it.</p>
+              </div>
+            </div>`,
+        },
+        {
+          cls: "divider",
+          title: "Part 4 · useEffect",
+          html: `
+            <p class="eyebrow">Part 4 of 6</p>
+            <h1>useEffect</h1>
+            <p class="lead">Everything that lives outside React: the network, timers, the browser itself.</p>`,
+        },
+        {
+          title: "Side effects",
+          html: `
+            <h2>UseEffect: a way to keep things in sync</h2>
+            <p class="lead">A component takes props and has state and returns JSX. Nothing else — no requests, no timers, no touching the page directly. </p>
+            <div class="cards">
+              <div class="card"><h3>network</h3><p>Fetching data from an API.</p></div>
+              <div class="card"><h3>timers</h3><p><code>setInterval</code>, <code>setTimeout</code>.</p></div>
+              <div class="card"><h3>browser</h3><p><code>localStorage</code>, <code>document.title</code>.</p></div>
+            </div>
+            <p class="lead">Everything outside React goes into <code>useEffect</code>: it runs after the render, then keeps things in sync.</p>`,
+        },
+        {
+          title: "Dependency array",
+          html: `
+            <h2>Dependency array: when does an effect run?</h2>
+            <pre class="code good tight">useEffect(() =&gt; {
+  document.title = todos.length + " todos";
+}, [todos]);</pre>
+            <div class="cards">
+              <div class="card"><h3>[ ]</h3><p>Depends on nothing. Runs <strong>once</strong>, after the first render and after the component unmount.</p></div>
+              <div class="card"><h3>[todos]</h3><p>Runs <strong>again</strong> whenever <code>todos</code> changes.</p></div>
+            </div>`,
+        },
+        {
+          title: "Cleanup",
+          html: `
+            <h2>If you opened something, close it</h2>
+            <pre class="code good tight">useEffect(() =&gt; {
+  const id = setInterval(tick, 1000);
+  return () =&gt; clearInterval(id);
+}, []);</pre>
+            <p class="muted">Same discipline as <code>addEventListener</code> and <code>removeEventListener</code> in plain JavaScript. React just gives it a place to live.</p>`,
+        },
+        {
+          title: "Data fetching",
+          html: `
+            <h2>Every request has three states</h2>
+            <pre class="code good tight">useEffect(() =&gt; {
+  fetch("https://jsonplaceholder.typicode.com/todos?_limit=8")
+    .then((res) =&gt; {
+      if (!res.ok) throw new Error(res.status);
+      return res.json();
+    })
+    .then(setTodos)
+    .catch((err) =&gt; setError(err.message))
+    .finally(() =&gt; setLoading(false));
+}, []);</pre>
+            <div class="cards">
+              <div class="card"><h3>loading</h3><p>Waiting for the answer.</p></div>
+              <div class="card"><h3>error</h3><p>The request failed.</p></div>
+              <div class="card"><h3>data</h3><p>Render the list.</p></div>
+            </div>`,
+        },
+        {
+          cls: "divider",
+          title: "Part 5 · Project setup",
+          html: `
+            <p class="eyebrow">Part 5 of 6</p>
+            <h1>Setting up a project</h1>
+            <p class="lead">Things we need to set up a project.</p>`,
+        },
+        {
+          title: "Node",
+          html: `
+            <h2>Node: JavaScript outside the browser</h2>
+            <ul class="bullets">
+              <li>Engine</li>
+              <li>The browser runs your app. <strong>Node creates a build step.</strong></li>
+              <li>Preparing the tools to build your app.</li>
+            </ul>`,
+        },
+        {
+          title: "npm",
+          html: `
+            <h2>npm and package.json</h2>
+            <pre class="code tight">{
+  "dependencies":    { "react": "^19.2.0", "baklava": "^1.0.0" },
+  "devDependencies": { "vite": "^7.1.0" },
+  "scripts":         { "dev": "vite", "build": "vite build" }
+}</pre>
+            <ul class="bullets">
+              <li><strong>dependencies</strong> ship to the user, <strong>devDependencies</strong> only help you build</li>
+              <li><code>npm install</code> reads this file and fills <code>node_modules/</code></li>
+            </ul>`,
+        },
+        {
+          title: "Vite",
+          html: `
+            <h2>Vite: dev server and build tool</h2>
+            <pre class="code good tight">npm create vite@latest todo-app
+cd todo-app
+npm install
+npm run dev</pre>
+            <ul class="bullets">
+              <li>Compiles JSX, serves the app, refreshes the browser as you type</li>
+              <li><code>npm run build</code> produces the static files you deploy</li>
+            </ul>`,
+        },
+        {
+          title: "Tailwind",
+          html: `
+            <h2>Styling Library: Tailwind</h2>
+            <div class="two-col">
+              <div>
+                <div class="col-label no">Plain CSS</div>
+                <pre class="code bad tight">&lt;li class="todo-item"&gt;
+
+.todo-item {
+  display: flex;
+  gap: 8px;
+}</pre>
+              </div>
+              <div>
+                <div class="col-label yes">Using Tailwind</div>
+                <pre class="code good tight">&lt;li className="flex gap-2"&gt;</pre>
+              </div>
+            </div>`,
+        },
+        {
+          title: "Recap",
+          html: `
+            <h2>What we know so far</h2>
+            <div class="two-col">
+              <ul class="bullets">
+                <li class="yes"><strong>React</strong> <span class="muted">— a library for building user interfaces</span></li>
+                <li class="yes"><strong>DOM</strong> <span class="muted">— the browser’s live page tree</span></li>
+                <li class="yes"><strong>UI = f(state)</strong> <span class="muted">— construct the UI from the data</span></li>
+                <li class="yes"><strong>Component</strong> <span class="muted">— function that returns JSX</span></li>
+                <li class="yes"><strong>Props</strong> <span class="muted">— like function parameters</span></li>
+                <li class="yes"><strong>State</strong> <span class="muted">— changing data React listens to</span></li>
+                <li class="yes"><strong>key</strong> <span class="muted">— unique identifier</span></li>
+              </ul>
+              <ul class="bullets">
+                <li class="yes"><strong>useEffect</strong> <span class="muted">— sync with the outside</span></li>
+                <li class="yes"><strong>Node</strong> <span class="muted">— engine</span></li>
+                <li class="yes"><strong>npm</strong> <span class="muted">— package manager</span></li>
+                <li class="yes"><strong>package.json</strong> <span class="muted">— the project’s dependency list</span></li>
+                <li class="yes"><strong>Vite</strong> <span class="muted">— compiles JSX into JS and runs the app</span></li>
+                <li class="yes"><strong>Tailwind (Styling Library)</strong> <span class="muted">— styling with utility classes</span></li>
+              </ul>
+            </div>`,
+        },
+        {
+          cls: "divider",
+          title: "Part 6 · Live coding",
+          html: `
+            <p class="eyebrow">Part 6 of 6</p>
+            <h1>Live coding</h1>`,
+        },
+        {
+          title: "Homework",
+          html: `
+            <h2>Your next steps</h2>
+            <ul class="bullets">
+              <li>Filter tabs: all / active / done</li>
+              <li>Keep the todos in <code>localStorage</code> so they survive a refresh</li>
+              <li>Edit a todo</li>
+              <li>Search bar. Plus: learn and apply <code>debouncing</code></li>
+            </ul>`,
+        },
+      ];
+
+      const TOKENS = new RegExp(
+        [
+          "(\\/\\/[^\\n]*)",
+          '("(?:\\\\.|[^"\\\\\\n])*")',
+          "(&lt;\\/?[A-Za-z][\\w.]*)",
+          "\\b(const|let|var|function|return|import|export|default|from|if|else|new|throw|async|await|true|false|null|undefined)\\b",
+          "\\b(useState|useEffect|setTodos|setText|setCount|setError|setLoading|fetch|json|map|filter|join|push|createElement|querySelector|addEventListener|setInterval|clearInterval|preventDefault)\\b",
+        ].join("|"),
+        "g",
+      );
+
+      function highlight(raw) {
+        const escaped = raw
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+
+        return escaped.replace(
+          TOKENS,
+          (match, comment, str, tag, keyword, fn) => {
+            if (comment) return '<span class="tok-c">' + comment + "</span>";
+            if (str) return '<span class="tok-s">' + str + "</span>";
+            if (tag) return '<span class="tok-t">' + tag + "</span>";
+            if (keyword) return '<span class="tok-k">' + keyword + "</span>";
+            if (fn) return '<span class="tok-f">' + fn + "</span>";
+            return match;
+          },
+        );
+      }
+
+      const stage = document.getElementById("stage");
+      const progress = document.getElementById("progress");
+      const counter = document.getElementById("counter");
+      const overview = document.getElementById("overview");
+      const thumbs = document.getElementById("thumbs");
+      const help = document.getElementById("help");
+
+      let current = 0;
+      let previous = null;
+
+      const nodes = SLIDES.map((slide, i) => {
+        const el = document.createElement("section");
+        el.className = "slide" + (slide.cls ? " " + slide.cls : "");
+        el.innerHTML = slide.html;
+        el.querySelectorAll("pre.code").forEach((pre) => {
+          pre.innerHTML = highlight(pre.textContent);
+        });
+        el.dataset.index = i;
+        stage.append(el);
+        return el;
+      });
+
+      function show(i, dir) {
+        i = Math.max(0, Math.min(SLIDES.length - 1, i));
+        if (i === current && previous !== null) return;
+
+        stage.dataset.dir = dir === "back" ? "back" : "fwd";
+
+        nodes.forEach((el) => el.classList.remove("is-live", "is-out"));
+        if (previous !== null && previous !== i) {
+          nodes[previous].classList.add("is-out");
+        }
+        nodes[i].classList.add("is-live");
+
+        previous = i;
+        current = i;
+        syncChrome();
+      }
+
+      function next() {
+        if (current < SLIDES.length - 1) show(current + 1, "fwd");
+      }
+
+      function prev() {
+        if (current > 0) show(current - 1, "back");
+      }
+
+      function syncChrome() {
+        progress.style.width = ((current + 1) / SLIDES.length) * 100 + "%";
+        counter.innerHTML = "<b>" + (current + 1) + "</b> / " + SLIDES.length;
+        thumbs.querySelectorAll(".thumb").forEach((t, i) => {
+          t.classList.toggle("current", i === current);
+        });
+        const hash = "#" + (current + 1);
+        if (location.hash !== hash) {
+          history.replaceState(null, "", hash);
+        }
+      }
+
+      SLIDES.forEach((slide, i) => {
+        const btn = document.createElement("button");
+        btn.className = "thumb";
+        btn.innerHTML =
+          '<span class="idx">' +
+          String(i + 1).padStart(2, "0") +
+          "</span>" +
+          slide.title;
+        btn.addEventListener("click", () => {
+          overview.classList.remove("open");
+          show(i, i < current ? "back" : "fwd");
+        });
+        thumbs.append(btn);
+      });
+
+      function closeOverlays() {
+        overview.classList.remove("open");
+        help.classList.remove("open");
+      }
+
+      document.getElementById("next").addEventListener("click", next);
+      document.getElementById("prev").addEventListener("click", prev);
+      document.getElementById("grid").addEventListener("click", () => {
+        help.classList.remove("open");
+        overview.classList.toggle("open");
+      });
+      document.getElementById("full").addEventListener("click", toggleFull);
+      overview.addEventListener("click", (e) => {
+        if (e.target === overview) closeOverlays();
+      });
+      help.addEventListener("click", (e) => {
+        if (e.target === help) closeOverlays();
+      });
+
+      function toggleFull() {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+
+      document.addEventListener("keydown", (e) => {
+        const k = e.key;
+
+        if (k === "Escape") return closeOverlays();
+
+        if (
+          k === "ArrowRight" ||
+          k === "ArrowDown" ||
+          k === " " ||
+          k === "PageDown"
+        ) {
+          e.preventDefault();
+          return next();
+        }
+
+        if (k === "ArrowLeft" || k === "ArrowUp" || k === "PageUp") {
+          e.preventDefault();
+          return prev();
+        }
+
+        if (k === "Home") return show(0, "back");
+        if (k === "End") return show(SLIDES.length - 1, "fwd");
+
+        if (k === "o" || k === "O") {
+          help.classList.remove("open");
+          return overview.classList.toggle("open");
+        }
+        if (k === "f" || k === "F") return toggleFull();
+        if (k === "?" || k === "/") {
+          overview.classList.remove("open");
+          return help.classList.toggle("open");
+        }
+      });
+
+      let touchX = null;
+      stage.addEventListener(
+        "touchstart",
+        (e) => {
+          touchX = e.changedTouches[0].clientX;
+        },
+        { passive: true },
+      );
+      stage.addEventListener(
+        "touchend",
+        (e) => {
+          if (touchX === null) return;
+          const dx = e.changedTouches[0].clientX - touchX;
+          if (Math.abs(dx) > 60) (dx < 0 ? next : prev)();
+          touchX = null;
+        },
+        { passive: true },
+      );
+
+      const fromHash = parseInt(location.hash.replace("#", ""), 10);
+      show(Number.isFinite(fromHash) ? fromHash - 1 : 0, "fwd");
+
+      window.addEventListener("hashchange", () => {
+        const n = parseInt(location.hash.replace("#", ""), 10);
+        if (!Number.isFinite(n)) return;
+        const i = Math.max(0, Math.min(SLIDES.length - 1, n - 1));
+        if (i !== current) show(i, i < current ? "back" : "fwd");
+      });
+    </script>
+  </body>
+</html>
